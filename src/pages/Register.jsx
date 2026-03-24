@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import API from "../api/axios";
 
 function Register() {
   const [name, setName] = useState("");
@@ -7,51 +8,28 @@ function Register() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
-
-    if (!name || !email || !password) {
-      setError("All fields are required");
-      return;
-    }
-
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
-      return;
-    }
-
-    // هنشوف لو في يوزرز موجودين في localStorage
-    const existingUsers = localStorage.getItem("users");
-    const users = existingUsers ? JSON.parse(existingUsers) : [];
-
-    // هنتشيك لو الايميل ده موجود قبل كده
-    const emailExists = users.find(u => u.email === email);
-    if (emailExists) {
-      setError("Email already exists");
-      return;
-    }
-
-    // هنعمل اليوزر الجديد
-    const newUser = {
-      id: Date.now().toString(),
-      name,
-      email,
-      password
-    };
-
-    // هنضيفه للـ users وهنحفظهم
-    const updatedUsers = [...users, newUser];
-    localStorage.setItem("users", JSON.stringify(updatedUsers));
-
+    setLoading(true);
     setError("");
-    setSuccess("Account created successfully! Redirecting...");
 
-    setTimeout(() => {
-      navigate("/login");
-    }, 2000);
+    try {
+      await API.post("/auth/register", { name, email, password });
+
+      setSuccess("Account created successfully! Redirecting...");
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
+    } catch (err) {
+        console.log("Full error:", err.response);
+        setError(err.response?.data?.msg || err.response?.data?.message || err.response?.data?.errors?.[0]?.msg || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -96,8 +74,12 @@ function Register() {
                 />
               </div>
 
-              <button type="submit" className="btn btn-primary w-100">
-                Register
+              <button
+                type="submit"
+                className="btn btn-primary w-100"
+                disabled={loading}
+              >
+                {loading ? "Loading..." : "Register"}
               </button>
             </form>
 

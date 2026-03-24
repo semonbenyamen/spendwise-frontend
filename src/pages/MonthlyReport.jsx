@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import API from "../api/axios";
 
 function MonthlyReport() {
   const [monthlyData, setMonthlyData] = useState([]);
-  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const navigate = useNavigate();
 
@@ -20,38 +21,34 @@ function MonthlyReport() {
       navigate("/login");
       return;
     }
-
-    const userData = JSON.parse(loggedUser);
-    setUser(userData);
-
-    const expensesKey = `expenses_${userData.id}`;
-    const savedExpenses = localStorage.getItem(expensesKey);
-    const expensesList = savedExpenses ? JSON.parse(savedExpenses) : [];
-
-    // تجميع المصاريف حسب الشهر زي الـ backend بالظبط
-    const monthMap = {};
-    expensesList.forEach(exp => {
-      const month = new Date(exp.date).getMonth() + 1;
-      if (monthMap[month]) {
-        monthMap[month] += exp.amount;
-      } else {
-        monthMap[month] = exp.amount;
-      }
-    });
-
-    // تحويل الـ map لـ array وترتيبه
-    const data = Object.keys(monthMap)
-      .map(month => ({
-        month: Number(month),
-        total: monthMap[month]
-      }))
-      .sort((a, b) => a.month - b.month);
-
-    setMonthlyData(data);
+    fetchMonthlyReport();
   }, []);
 
-  // أعلى شهر في المصاريف
+  const fetchMonthlyReport = async () => {
+    try {
+      const response = await API.get("/expenses/monthly-report");
+      setMonthlyData(response.data.data);
+    } catch (err) {
+      console.log("Error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const maxTotal = Math.max(...monthlyData.map(d => d.total), 1);
+
+  if (loading) {
+    return (
+      <div>
+        <Navbar />
+        <div className="container mt-4 text-center">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -70,7 +67,7 @@ function MonthlyReport() {
               {monthlyData.map((item, index) => (
                 <div className="col-md-3 mb-3" key={index}>
                   <div className="card p-3 text-center shadow">
-                    <h6>{monthNames[item.month - 1]}</h6>
+                    <h6>{monthNames[item._id - 1]}</h6>
                     <h5 className="text-danger">{item.total} EGP</h5>
                     <div className="progress mt-2" style={{ height: "10px" }}>
                       <div
@@ -98,7 +95,7 @@ function MonthlyReport() {
                 <tbody>
                   {monthlyData.map((item, index) => (
                     <tr key={index}>
-                      <td>{monthNames[item.month - 1]}</td>
+                      <td>{monthNames[item._id - 1]}</td>
                       <td>{item.total} EGP</td>
                     </tr>
                   ))}

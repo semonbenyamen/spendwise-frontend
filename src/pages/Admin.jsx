@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import API from "../api/axios";
 
 function Admin() {
   const [users, setUsers] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [analytics, setAnalytics] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const navigate = useNavigate();
 
@@ -17,68 +19,44 @@ function Admin() {
     }
 
     const userData = JSON.parse(loggedUser);
-
-    // التأكد إن اليوزر admin
     if (userData.role !== "admin") {
       navigate("/dashboard");
       return;
     }
 
-    // جيبي كل الـ users من localStorage
-    const savedUsers = localStorage.getItem("users");
-    const usersList = savedUsers ? JSON.parse(savedUsers) : [];
-    setUsers(usersList);
-
-    // جيبي كل الـ expenses من كل اليوزرز
-    let allExpenses = [];
-    usersList.forEach(user => {
-      const expensesKey = `expenses_${user.id}`;
-      const savedExpenses = localStorage.getItem(expensesKey);
-      if (savedExpenses) {
-        const userExpenses = JSON.parse(savedExpenses).map(exp => ({
-          ...exp,
-          userName: user.name,
-          userEmail: user.email
-        }));
-        allExpenses = [...allExpenses, ...userExpenses];
-      }
-    });
-    setExpenses(allExpenses);
-
-    // حساب الـ analytics
-    const totalExpenses = allExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-
-    // Top categories
-    const categoryMap = {};
-    allExpenses.forEach(exp => {
-      const catName = exp.category.name;
-      if (categoryMap[catName]) {
-        categoryMap[catName] += exp.amount;
-      } else {
-        categoryMap[catName] = exp.amount;
-      }
-    });
-    const topCategories = Object.keys(categoryMap)
-      .map(name => ({ category: name, total: categoryMap[name] }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 3);
-
-    // Top users
-    const userMap = {};
-    allExpenses.forEach(exp => {
-      if (userMap[exp.userName]) {
-        userMap[exp.userName] += exp.amount;
-      } else {
-        userMap[exp.userName] = exp.amount;
-      }
-    });
-    const topUsers = Object.keys(userMap)
-      .map(name => ({ user: name, total: userMap[name] }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 3);
-
-    setAnalytics({ totalExpenses, topCategories, topUsers });
+    fetchAdminData();
   }, []);
+
+  const fetchAdminData = async () => {
+    try {
+      const [usersRes, expensesRes, analyticsRes] = await Promise.all([
+        API.get("/admin/users"),
+        API.get("/admin/expenses"),
+        API.get("/admin/analytics")
+      ]);
+
+      setUsers(usersRes.data.data);
+      setExpenses(expensesRes.data.data);
+      setAnalytics(analyticsRes.data.data);
+    } catch (err) {
+      console.log("Error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div>
+        <Navbar />
+        <div className="container mt-4 text-center">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -113,7 +91,7 @@ function Admin() {
           <div className="col-md-6">
             <div className="card p-4 shadow">
               <h5>Top 3 Categories 📊</h5>
-              {analytics?.topCategories.length === 0 ? (
+              {analytics?.topCategories?.length === 0 ? (
                 <div className="alert alert-info">No data yet!</div>
               ) : (
                 <table className="table table-bordered mt-2">
@@ -124,7 +102,7 @@ function Admin() {
                     </tr>
                   </thead>
                   <tbody>
-                    {analytics?.topCategories.map((cat, index) => (
+                    {analytics?.topCategories?.map((cat, index) => (
                       <tr key={index}>
                         <td>{cat.category}</td>
                         <td>{cat.total} EGP</td>
@@ -139,7 +117,7 @@ function Admin() {
           <div className="col-md-6">
             <div className="card p-4 shadow">
               <h5>Top 3 Spending Users 👤</h5>
-              {analytics?.topUsers.length === 0 ? (
+              {analytics?.topUsers?.length === 0 ? (
                 <div className="alert alert-info">No data yet!</div>
               ) : (
                 <table className="table table-bordered mt-2">
@@ -150,7 +128,7 @@ function Admin() {
                     </tr>
                   </thead>
                   <tbody>
-                    {analytics?.topUsers.map((user, index) => (
+                    {analytics?.topUsers?.map((user, index) => (
                       <tr key={index}>
                         <td>{user.user}</td>
                         <td>{user.total} EGP</td>
@@ -175,14 +153,20 @@ function Admin() {
                   <th>#</th>
                   <th>Name</th>
                   <th>Email</th>
+                  <th>Role</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map((user, index) => (
-                  <tr key={user.id}>
+                  <tr key={user._id}>
                     <td>{index + 1}</td>
                     <td>{user.name}</td>
                     <td>{user.email}</td>
+                    <td>
+                      <span className={`badge ${user.role === "admin" ? "bg-danger" : "bg-primary"}`}>
+                        {user.role}
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -191,7 +175,7 @@ function Admin() {
         </div>
 
         {/* All Expenses */}
-        <div className="card p-4 shadow mt-4">
+        <div className="card p-4 shadow mt-4 mb-4">
           <h5>All Expenses</h5>
           {expenses.length === 0 ? (
             <div className="alert alert-info">No expenses yet!</div>
@@ -209,11 +193,11 @@ function Admin() {
               <tbody>
                 {expenses.map((expense) => (
                   <tr key={expense._id}>
-                    <td>{expense.userName}</td>
+                    <td>{expense.user?.name}</td>
                     <td>{expense.title}</td>
                     <td>{expense.amount} EGP</td>
-                    <td>{expense.category.name}</td>
-                    <td>{expense.date}</td>
+                    <td>{expense.category?.name}</td>
+                    <td>{expense.createdAt?.split("T")[0]}</td>
                   </tr>
                 ))}
               </tbody>

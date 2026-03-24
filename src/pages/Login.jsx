@@ -1,34 +1,43 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { mockUser } from "../data/mockData";
+import API from "../api/axios";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError("");
 
-    // هنجيب الـ users من localStorage
-    const existingUsers = localStorage.getItem("users");
-    const users = existingUsers ? JSON.parse(existingUsers) : [];
+    try {
+      const response = await API.post("/auth/login", { email, password });
 
-    // هنضيف الـ mockUser للـ users عشان يشتغل بيه كمان
-    const allUsers = [...users, mockUser];
+      // الـ backend بيرجع token
+      const token = response.data.token;
+      localStorage.setItem("token", token);
 
-    // هنبحث عن اليوزر بالايميل والباسورد
-    const foundUser = allUsers.find(
-      u => u.email === email && u.password === password
-    );
+      // جيبي بيانات اليوزر من الـ profile
+      const profileResponse = await API.get("/auth/profile");
+      const userData = profileResponse.data;
+      localStorage.setItem("user", JSON.stringify({
+        id: userData._id,
+        name: userData.name,
+        email: userData.email,
+        role: userData.role || "user"
+      }));
 
-    if (foundUser) {
-      localStorage.setItem("user", JSON.stringify(foundUser));
       navigate("/dashboard");
-    } else {
-      setError("Invalid email or password");
+    } catch (err) {
+        console.log("Full error:", err.response);
+        setError(err.response?.data?.msg || err.response?.data?.message || err.response?.data?.errors?.[0]?.msg || "Something went wrong");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -63,8 +72,12 @@ function Login() {
                 />
               </div>
 
-              <button type="submit" className="btn btn-primary w-100">
-                Login
+              <button
+                type="submit"
+                className="btn btn-primary w-100"
+                disabled={loading}
+              >
+                {loading ? "Loading..." : "Login"}
               </button>
             </form>
 

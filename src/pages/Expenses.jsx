@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import API from "../api/axios";
 
 function Expenses() {
   const [expenses, setExpenses] = useState([]);
@@ -11,6 +12,7 @@ function Expenses() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
+  const [loading, setLoading] = useState(false);
   const [editId, setEditId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
   const [editAmount, setEditAmount] = useState("");
@@ -24,99 +26,60 @@ function Expenses() {
       navigate("/login");
       return;
     }
-    const userData = JSON.parse(loggedUser);
-
-    const expensesKey = `expenses_${userData.id}`;
-    const categoriesKey = `categories_${userData.id}`;
-
-    const savedExpenses = localStorage.getItem(expensesKey);
-    if (savedExpenses) {
-      setExpenses(JSON.parse(savedExpenses));
-    } else {
-      setExpenses([]);
-      localStorage.setItem(expensesKey, JSON.stringify([]));
-    }
-
-    const savedCategories = localStorage.getItem(categoriesKey);
-    if (savedCategories) {
-      setCategories(JSON.parse(savedCategories));
-    } else {
-      setCategories([]);
-    }
+    fetchExpenses();
+    fetchCategories();
   }, []);
 
-  const handleAddExpense = (e) => {
+  const fetchExpenses = async () => {
+    try {
+      const response = await API.get("/expenses/all");
+      setExpenses(response.data.data);
+    } catch (err) {
+      setError("Failed to load expenses");
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await API.get("/categories/all");
+      setCategories(response.data.data);
+    } catch (err) {
+      setError("Failed to load categories");
+    }
+  };
+
+  const handleAddExpense = async (e) => {
     e.preventDefault();
     if (!title || !amount || !category) {
       setError("All fields are required");
       return;
     }
+    setLoading(true);
+    try {
+      const response = await API.post("/expenses/add", {
+        title,
+        amount: Number(amount),
+        category
+      });
 
-    const userData = JSON.parse(localStorage.getItem("user"));
-    const expensesKey = `expenses_${userData.id}`;
-    const budgetKey = `budget_${userData.id}`;
-
-    const newExpense = {
-      _id: Date.now().toString(),
-      title,
-      amount: Number(amount),
-      category: {
-        _id: category,
-        name: categories.find(c => c._id === category)?.name
-      },
-      date: new Date().toISOString().split("T")[0]
-    };
-
-    const updated = [newExpense, ...expenses];
-    setExpenses(updated);
-    localStorage.setItem(expensesKey, JSON.stringify(updated));
-
-    const totalSpent = updated.reduce((sum, exp) => sum + exp.amount, 0);
-
-    const savedBudget = localStorage.getItem(budgetKey);
-    if (savedBudget) {
-      const budgetData = JSON.parse(savedBudget);
-
-      let alert = "none";
-      let alertMsg = null;
-
-      if (totalSpent >= budgetData.amount && budgetData.alertSent !== "max") {
-        alert = "max";
-        alertMsg = "🚨 You have reached 100% of your monthly budget!";
-      } else if (
-        totalSpent >= budgetData.amount * 0.8 &&
-        budgetData.alertSent === "none"
-      ) {
-        alert = "warning";
-        alertMsg = "⚠️ Warning! You have spent 80% of your monthly budget!";
-      } else if (totalSpent > budgetData.amount) {
-        alertMsg = "🚨 You already exceeded your monthly budget!";
+      // الـ alert بتاع الـ backend
+      if (response.data.message) {
+        setAlertMessage(response.data.message);
+        setTimeout(() => setAlertMessage(""), 4000);
       }
 
-      const updatedBudget = {
-        ...budgetData,
-        totalSpent,
-        remaining: budgetData.amount - totalSpent,
-        percentage: budgetData.amount > 0
-          ? ((totalSpent / budgetData.amount) * 100).toFixed(2)
-          : "0.00",
-        alertSent: alert !== "none" ? alert : budgetData.alertSent,
-        alert: alert !== "none" ? alert : budgetData.alert
-      };
-
-      localStorage.setItem(budgetKey, JSON.stringify(updatedBudget));
-      if (alertMsg) setAlertMessage(alertMsg);
+      setTitle("");
+      setAmount("");
+      setCategory("");
+      setError("");
+      setSuccess("Expense added successfully!");
+      setTimeout(() => setSuccess(""), 2000);
+      fetchExpenses();
+    } catch (err) {
+      setError(err.response?.data?.msg || err.response?.data?.errors?.[0]?.msg || "Something went wrong");
+    } finally {
+      setLoading(false);
     }
-
-    setTitle("");
-    setAmount("");
-    setCategory("");
-    setError("");
-    setSuccess("Expense added successfully!");
-    setTimeout(() => {
-      setSuccess("");
-      setAlertMessage("");
-    }, 4000);
   };
 
   const handleEditClick = (expense) => {
@@ -126,102 +89,40 @@ function Expenses() {
     setEditCategory(expense.category._id);
   };
 
-  const handleEditSave = (id) => {
+  const handleEditSave = async (id) => {
     if (!editTitle || !editAmount || !editCategory) {
       setError("All fields are required");
       return;
     }
-
-    const userData = JSON.parse(localStorage.getItem("user"));
-    const expensesKey = `expenses_${userData.id}`;
-    const budgetKey = `budget_${userData.id}`;
-
-    const updated = expenses.map(exp =>
-      exp._id === id ? {
-        ...exp,
+    try {
+      await API.put(`/expenses/update/${id}`, {
         title: editTitle,
         amount: Number(editAmount),
-        category: {
-          _id: editCategory,
-          name: categories.find(c => c._id === editCategory)?.name
-        }
-      } : exp
-    );
+        category: editCategory
+      });
 
-    setExpenses(updated);
-    localStorage.setItem(expensesKey, JSON.stringify(updated));
-
-    // حدثي الـ budget بعد التعديل
-    const totalSpent = updated.reduce((sum, exp) => sum + exp.amount, 0);
-    const savedBudget = localStorage.getItem(budgetKey);
-    if (savedBudget) {
-      const budgetData = JSON.parse(savedBudget);
-
-      let alert = "none";
-      if (totalSpent >= budgetData.amount) {
-        alert = "max";
-      } else if (totalSpent >= budgetData.amount * 0.8) {
-        alert = "warning";
-      }
-
-      const updatedBudget = {
-        ...budgetData,
-        totalSpent,
-        remaining: budgetData.amount - totalSpent,
-        percentage: budgetData.amount > 0
-          ? ((totalSpent / budgetData.amount) * 100).toFixed(2)
-          : "0.00",
-        alertSent: alert,
-        alert
-      };
-      localStorage.setItem(budgetKey, JSON.stringify(updatedBudget));
+      setEditId(null);
+      setEditTitle("");
+      setEditAmount("");
+      setEditCategory("");
+      setError("");
+      setSuccess("Expense updated successfully!");
+      setTimeout(() => setSuccess(""), 2000);
+      fetchExpenses();
+    } catch (err) {
+      setError(err.response?.data?.msg || "Something went wrong");
     }
-
-    setEditId(null);
-    setEditTitle("");
-    setEditAmount("");
-    setEditCategory("");
-    setError("");
-    setSuccess("Expense updated successfully!");
-    setTimeout(() => setSuccess(""), 2000);
   };
 
-  const handleDelete = (id) => {
-    const userData = JSON.parse(localStorage.getItem("user"));
-    const expensesKey = `expenses_${userData.id}`;
-    const budgetKey = `budget_${userData.id}`;
-
-    const updated = expenses.filter(exp => exp._id !== id);
-    setExpenses(updated);
-    localStorage.setItem(expensesKey, JSON.stringify(updated));
-
-    const totalSpent = updated.reduce((sum, exp) => sum + exp.amount, 0);
-    const savedBudget = localStorage.getItem(budgetKey);
-    if (savedBudget) {
-      const budgetData = JSON.parse(savedBudget);
-
-      let alert = "none";
-      if (totalSpent >= budgetData.amount) {
-        alert = "max";
-      } else if (totalSpent >= budgetData.amount * 0.8) {
-        alert = "warning";
-      }
-
-      const updatedBudget = {
-        ...budgetData,
-        totalSpent,
-        remaining: budgetData.amount - totalSpent,
-        percentage: budgetData.amount > 0
-          ? ((totalSpent / budgetData.amount) * 100).toFixed(2)
-          : "0.00",
-        alertSent: alert,
-        alert
-      };
-      localStorage.setItem(budgetKey, JSON.stringify(updatedBudget));
+  const handleDelete = async (id) => {
+    try {
+      await API.delete(`/expenses/delete/${id}`);
+      setSuccess("Expense deleted!");
+      setTimeout(() => setSuccess(""), 2000);
+      fetchExpenses();
+    } catch (err) {
+      setError(err.response?.data?.msg || "Something went wrong");
     }
-
-    setSuccess("Expense deleted!");
-    setTimeout(() => setSuccess(""), 2000);
   };
 
   return (
@@ -276,8 +177,12 @@ function Expenses() {
                 </select>
               </div>
             </div>
-            <button type="submit" className="btn btn-primary">
-              Add Expense
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={loading}
+            >
+              {loading ? "Adding..." : "Add Expense"}
             </button>
           </form>
         </div>
@@ -339,10 +244,10 @@ function Expenses() {
                           ))}
                         </select>
                       ) : (
-                        expense.category.name
+                        expense.category?.name
                       )}
                     </td>
-                    <td>{expense.date}</td>
+                    <td>{expense.date?.split("T")[0] || expense.date}</td>
                     <td>
                       {editId === expense._id ? (
                         <button

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import API from "../api/axios";
 
 function Categories() {
   const [categories, setCategories] = useState([]);
@@ -9,6 +10,7 @@ function Categories() {
   const [editName, setEditName] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
@@ -18,48 +20,48 @@ function Categories() {
       navigate("/login");
       return;
     }
-    const userData = JSON.parse(loggedUser);
-    const categoriesKey = `categories_${userData.id}`;
-
-    const saved = localStorage.getItem(categoriesKey);
-    if (saved) {
-      setCategories(JSON.parse(saved));
-    } else {
-      setCategories([]);
-      localStorage.setItem(categoriesKey, JSON.stringify([]));
-    }
+    fetchCategories();
   }, []);
 
-  const handleAddCategory = (e) => {
+  const fetchCategories = async () => {
+    try {
+      const response = await API.get("/categories/all");
+      setCategories(response.data.data);
+    } catch (err) {
+      setError("Failed to load categories");
+    }
+  };
+
+  const handleAddCategory = async (e) => {
     e.preventDefault();
     if (!name) {
       setError("Category name is required");
       return;
     }
-    const userData = JSON.parse(localStorage.getItem("user"));
-    const categoriesKey = `categories_${userData.id}`;
-
-    const newCategory = { _id: Date.now().toString(), name };
-    const updated = [...categories, newCategory];
-    setCategories(updated);
-    localStorage.setItem(categoriesKey, JSON.stringify(updated));
-
-    setName("");
-    setError("");
-    setSuccess("Category added successfully!");
-    setTimeout(() => setSuccess(""), 2000);
+    setLoading(true);
+    try {
+      await API.post("/categories/add", { name });
+      setName("");
+      setError("");
+      setSuccess("Category added successfully!");
+      setTimeout(() => setSuccess(""), 2000);
+      fetchCategories();
+    } catch (err) {
+      setError(err.response?.data?.msg || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDelete = (id) => {
-    const userData = JSON.parse(localStorage.getItem("user"));
-    const categoriesKey = `categories_${userData.id}`;
-
-    const updated = categories.filter(cat => cat._id !== id);
-    setCategories(updated);
-    localStorage.setItem(categoriesKey, JSON.stringify(updated));
-
-    setSuccess("Category deleted!");
-    setTimeout(() => setSuccess(""), 2000);
+  const handleDelete = async (id) => {
+    try {
+      await API.delete(`/categories/delete/${id}`);
+      setSuccess("Category deleted!");
+      setTimeout(() => setSuccess(""), 2000);
+      fetchCategories();
+    } catch (err) {
+      setError(err.response?.data?.msg || "Cannot delete category");
+    }
   };
 
   const handleEditClick = (cat) => {
@@ -67,25 +69,22 @@ function Categories() {
     setEditName(cat.name);
   };
 
-  const handleEditSave = (id) => {
+  const handleEditSave = async (id) => {
     if (!editName) {
       setError("Category name is required");
       return;
     }
-    const userData = JSON.parse(localStorage.getItem("user"));
-    const categoriesKey = `categories_${userData.id}`;
-
-    const updated = categories.map(cat =>
-      cat._id === id ? { ...cat, name: editName } : cat
-    );
-    setCategories(updated);
-    localStorage.setItem(categoriesKey, JSON.stringify(updated));
-
-    setEditId(null);
-    setEditName("");
-    setError("");
-    setSuccess("Category updated successfully!");
-    setTimeout(() => setSuccess(""), 2000);
+    try {
+      await API.put(`/categories/update/${id}`, { name: editName });
+      setEditId(null);
+      setEditName("");
+      setError("");
+      setSuccess("Category updated successfully!");
+      setTimeout(() => setSuccess(""), 2000);
+      fetchCategories();
+    } catch (err) {
+      setError(err.response?.data?.msg || "Something went wrong");
+    }
   };
 
   return (
@@ -113,8 +112,12 @@ function Categories() {
                 />
               </div>
             </div>
-            <button type="submit" className="btn btn-primary">
-              Add Category
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={loading}
+            >
+              {loading ? "Adding..." : "Add Category"}
             </button>
           </form>
         </div>
