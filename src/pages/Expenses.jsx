@@ -1,0 +1,380 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import Navbar from "../components/Navbar";
+
+function Expenses() {
+  const [expenses, setExpenses] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [title, setTitle] = useState("");
+  const [amount, setAmount] = useState("");
+  const [category, setCategory] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
+  const [editId, setEditId] = useState(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editAmount, setEditAmount] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const loggedUser = localStorage.getItem("user");
+    if (!loggedUser) {
+      navigate("/login");
+      return;
+    }
+    const userData = JSON.parse(loggedUser);
+
+    const expensesKey = `expenses_${userData.id}`;
+    const categoriesKey = `categories_${userData.id}`;
+
+    const savedExpenses = localStorage.getItem(expensesKey);
+    if (savedExpenses) {
+      setExpenses(JSON.parse(savedExpenses));
+    } else {
+      setExpenses([]);
+      localStorage.setItem(expensesKey, JSON.stringify([]));
+    }
+
+    const savedCategories = localStorage.getItem(categoriesKey);
+    if (savedCategories) {
+      setCategories(JSON.parse(savedCategories));
+    } else {
+      setCategories([]);
+    }
+  }, []);
+
+  const handleAddExpense = (e) => {
+    e.preventDefault();
+    if (!title || !amount || !category) {
+      setError("All fields are required");
+      return;
+    }
+
+    const userData = JSON.parse(localStorage.getItem("user"));
+    const expensesKey = `expenses_${userData.id}`;
+    const budgetKey = `budget_${userData.id}`;
+
+    const newExpense = {
+      _id: Date.now().toString(),
+      title,
+      amount: Number(amount),
+      category: {
+        _id: category,
+        name: categories.find(c => c._id === category)?.name
+      },
+      date: new Date().toISOString().split("T")[0]
+    };
+
+    const updated = [newExpense, ...expenses];
+    setExpenses(updated);
+    localStorage.setItem(expensesKey, JSON.stringify(updated));
+
+    const totalSpent = updated.reduce((sum, exp) => sum + exp.amount, 0);
+
+    const savedBudget = localStorage.getItem(budgetKey);
+    if (savedBudget) {
+      const budgetData = JSON.parse(savedBudget);
+
+      let alert = "none";
+      let alertMsg = null;
+
+      if (totalSpent >= budgetData.amount && budgetData.alertSent !== "max") {
+        alert = "max";
+        alertMsg = "🚨 You have reached 100% of your monthly budget!";
+      } else if (
+        totalSpent >= budgetData.amount * 0.8 &&
+        budgetData.alertSent === "none"
+      ) {
+        alert = "warning";
+        alertMsg = "⚠️ Warning! You have spent 80% of your monthly budget!";
+      } else if (totalSpent > budgetData.amount) {
+        alertMsg = "🚨 You already exceeded your monthly budget!";
+      }
+
+      const updatedBudget = {
+        ...budgetData,
+        totalSpent,
+        remaining: budgetData.amount - totalSpent,
+        percentage: budgetData.amount > 0
+          ? ((totalSpent / budgetData.amount) * 100).toFixed(2)
+          : "0.00",
+        alertSent: alert !== "none" ? alert : budgetData.alertSent,
+        alert: alert !== "none" ? alert : budgetData.alert
+      };
+
+      localStorage.setItem(budgetKey, JSON.stringify(updatedBudget));
+      if (alertMsg) setAlertMessage(alertMsg);
+    }
+
+    setTitle("");
+    setAmount("");
+    setCategory("");
+    setError("");
+    setSuccess("Expense added successfully!");
+    setTimeout(() => {
+      setSuccess("");
+      setAlertMessage("");
+    }, 4000);
+  };
+
+  const handleEditClick = (expense) => {
+    setEditId(expense._id);
+    setEditTitle(expense.title);
+    setEditAmount(expense.amount);
+    setEditCategory(expense.category._id);
+  };
+
+  const handleEditSave = (id) => {
+    if (!editTitle || !editAmount || !editCategory) {
+      setError("All fields are required");
+      return;
+    }
+
+    const userData = JSON.parse(localStorage.getItem("user"));
+    const expensesKey = `expenses_${userData.id}`;
+    const budgetKey = `budget_${userData.id}`;
+
+    const updated = expenses.map(exp =>
+      exp._id === id ? {
+        ...exp,
+        title: editTitle,
+        amount: Number(editAmount),
+        category: {
+          _id: editCategory,
+          name: categories.find(c => c._id === editCategory)?.name
+        }
+      } : exp
+    );
+
+    setExpenses(updated);
+    localStorage.setItem(expensesKey, JSON.stringify(updated));
+
+    // حدثي الـ budget بعد التعديل
+    const totalSpent = updated.reduce((sum, exp) => sum + exp.amount, 0);
+    const savedBudget = localStorage.getItem(budgetKey);
+    if (savedBudget) {
+      const budgetData = JSON.parse(savedBudget);
+
+      let alert = "none";
+      if (totalSpent >= budgetData.amount) {
+        alert = "max";
+      } else if (totalSpent >= budgetData.amount * 0.8) {
+        alert = "warning";
+      }
+
+      const updatedBudget = {
+        ...budgetData,
+        totalSpent,
+        remaining: budgetData.amount - totalSpent,
+        percentage: budgetData.amount > 0
+          ? ((totalSpent / budgetData.amount) * 100).toFixed(2)
+          : "0.00",
+        alertSent: alert,
+        alert
+      };
+      localStorage.setItem(budgetKey, JSON.stringify(updatedBudget));
+    }
+
+    setEditId(null);
+    setEditTitle("");
+    setEditAmount("");
+    setEditCategory("");
+    setError("");
+    setSuccess("Expense updated successfully!");
+    setTimeout(() => setSuccess(""), 2000);
+  };
+
+  const handleDelete = (id) => {
+    const userData = JSON.parse(localStorage.getItem("user"));
+    const expensesKey = `expenses_${userData.id}`;
+    const budgetKey = `budget_${userData.id}`;
+
+    const updated = expenses.filter(exp => exp._id !== id);
+    setExpenses(updated);
+    localStorage.setItem(expensesKey, JSON.stringify(updated));
+
+    const totalSpent = updated.reduce((sum, exp) => sum + exp.amount, 0);
+    const savedBudget = localStorage.getItem(budgetKey);
+    if (savedBudget) {
+      const budgetData = JSON.parse(savedBudget);
+
+      let alert = "none";
+      if (totalSpent >= budgetData.amount) {
+        alert = "max";
+      } else if (totalSpent >= budgetData.amount * 0.8) {
+        alert = "warning";
+      }
+
+      const updatedBudget = {
+        ...budgetData,
+        totalSpent,
+        remaining: budgetData.amount - totalSpent,
+        percentage: budgetData.amount > 0
+          ? ((totalSpent / budgetData.amount) * 100).toFixed(2)
+          : "0.00",
+        alertSent: alert,
+        alert
+      };
+      localStorage.setItem(budgetKey, JSON.stringify(updatedBudget));
+    }
+
+    setSuccess("Expense deleted!");
+    setTimeout(() => setSuccess(""), 2000);
+  };
+
+  return (
+    <div>
+      <Navbar />
+      <div className="container mt-4">
+        <h4>Expenses 💸</h4>
+
+        {alertMessage && (
+          <div className="alert alert-warning mt-2">{alertMessage}</div>
+        )}
+
+        <div className="card p-4 shadow mb-4">
+          <h5>Add New Expense</h5>
+
+          {error && <div className="alert alert-danger">{error}</div>}
+          {success && <div className="alert alert-success">{success}</div>}
+
+          <form onSubmit={handleAddExpense}>
+            <div className="row">
+              <div className="col-md-4 mb-3">
+                <label>Title</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+              </div>
+              <div className="col-md-4 mb-3">
+                <label>Amount (EGP)</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                />
+              </div>
+              <div className="col-md-4 mb-3">
+                <label>Category</label>
+                <select
+                  className="form-control"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                >
+                  <option value="">Select Category</option>
+                  {categories.map((cat) => (
+                    <option key={cat._id} value={cat._id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <button type="submit" className="btn btn-primary">
+              Add Expense
+            </button>
+          </form>
+        </div>
+
+        <div className="card p-4 shadow">
+          <h5>All Expenses</h5>
+          {expenses.length === 0 ? (
+            <div className="alert alert-info">No expenses yet!</div>
+          ) : (
+            <table className="table table-bordered mt-2">
+              <thead className="table-dark">
+                <tr>
+                  <th>Title</th>
+                  <th>Amount</th>
+                  <th>Category</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {expenses.map((expense) => (
+                  <tr key={expense._id}>
+                    <td>
+                      {editId === expense._id ? (
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                        />
+                      ) : (
+                        expense.title
+                      )}
+                    </td>
+                    <td>
+                      {editId === expense._id ? (
+                        <input
+                          type="number"
+                          className="form-control"
+                          value={editAmount}
+                          onChange={(e) => setEditAmount(e.target.value)}
+                        />
+                      ) : (
+                        `${expense.amount} EGP`
+                      )}
+                    </td>
+                    <td>
+                      {editId === expense._id ? (
+                        <select
+                          className="form-control"
+                          value={editCategory}
+                          onChange={(e) => setEditCategory(e.target.value)}
+                        >
+                          <option value="">Select Category</option>
+                          {categories.map((cat) => (
+                            <option key={cat._id} value={cat._id}>
+                              {cat.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        expense.category.name
+                      )}
+                    </td>
+                    <td>{expense.date}</td>
+                    <td>
+                      {editId === expense._id ? (
+                        <button
+                          className="btn btn-success btn-sm me-2"
+                          onClick={() => handleEditSave(expense._id)}
+                        >
+                          Save
+                        </button>
+                      ) : (
+                        <button
+                          className="btn btn-warning btn-sm me-2"
+                          onClick={() => handleEditClick(expense)}
+                        >
+                          Edit
+                        </button>
+                      )}
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => handleDelete(expense._id)}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default Expenses;
