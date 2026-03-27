@@ -15,7 +15,7 @@ function Navbar() {
     <nav className="navbar navbar-dark bg-primary px-4">
       <span className="navbar-brand fw-bold">SpendWise 💰</span>
 
-      <div className="d-flex gap-3">
+      <div className="d-flex gap-3 align-items-center">
         <button
           className="btn btn-outline-light btn-sm"
           onClick={() => navigate("/dashboard")}
@@ -56,12 +56,27 @@ function Navbar() {
           </button>
         )}
 
-        <button
-          className="btn btn-outline-light btn-sm"
+        {/* Profile Button مع الصورة */}
+        <div
           onClick={() => navigate("/profile")}
+          style={{ cursor: "pointer" }}
         >
-          {user?.name?.charAt(0).toUpperCase()} 👤
-        </button>
+          {user?.profileImage ? (
+            <img
+              src={user.profileImage}
+              alt="Profile"
+              className="rounded-circle"
+              style={{ width: "35px", height: "35px", objectFit: "cover", border: "2px solid white" }}
+            />
+          ) : (
+            <div
+              className="rounded-circle bg-white text-primary d-flex align-items-center justify-content-center"
+              style={{ width: "35px", height: "35px", fontWeight: "bold" }}
+            >
+              {user?.name?.charAt(0).toUpperCase()}
+            </div>
+          )}
+        </div>
 
         <button
           className="btn btn-danger btn-sm"

@@ -1,3 +1,264 @@
+// import { useState, useEffect } from "react";
+// import { useNavigate } from "react-router-dom";
+// import Navbar from "../components/Navbar";
+// import API from "../api/axios";
+
+// function Admin() {
+//   // state data / loading / error
+//   const [users, setUsers] = useState([]);
+//   const [expenses, setExpenses] = useState([]);
+//   const [analytics, setAnalytics] = useState(null);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState("");
+
+//   const navigate = useNavigate();
+
+//   // get Data when the page loads
+//   useEffect(() => {
+//     const loggedUser = localStorage.getItem("user");
+//     if (!loggedUser) {
+//       navigate("/login");
+//       return;
+//     }
+
+//     // Make sure the user is admin
+//     const userData = JSON.parse(loggedUser);
+//     if (userData.role !== "admin") {
+//       navigate("/dashboard");
+//       return;
+//     }
+
+//     fetchAdminData();
+//   }, []);
+
+//   // Functio Get all admin data from the backend
+//   const fetchAdminData = async () => {
+//     try {
+//       // get users, expenses, and analytics all at the same time
+//       const [usersRes, expensesRes, analyticsRes] = await Promise.all([
+//         API.get("/admin/users"),
+//         API.get("/admin/expenses"),
+//         API.get("/admin/analytics")
+//       ]);
+
+//       setUsers(usersRes.data.data || []);
+//       setExpenses(expensesRes.data.data || []);
+//       setAnalytics(analyticsRes.data.data || {});
+//     } catch (err) {
+//       setError(err.response?.data?.message || "Failed to load admin data");
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   // loading screen
+//   if (loading) {
+//     return (
+//       <div>
+//         <Navbar />
+//         <div className="container mt-4 text-center">
+//           <div className="spinner-border text-primary" role="status" />
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <div>
+//       <Navbar />
+//       <div className="container mt-4">
+//         <h4>Admin Panel 👑</h4>
+
+//         {/*error message*/}
+//         {error && <div className="alert alert-danger mt-3">{error}</div>}
+
+//         {/*Statistics cards*/}
+//         <div className="row mt-4">
+//           <div className="col-md-4">
+//             <div className="card text-white bg-primary p-3 text-center">
+//               <h6>Total Users</h6>
+//               <h4>{users.length}</h4>
+//             </div>
+//           </div>
+//           <div className="col-md-4">
+//             <div className="card text-white bg-danger p-3 text-center">
+//               <h6>Total Expenses</h6>
+//               <h4>{analytics?.totalExpenses || 0} EGP</h4>
+//             </div>
+//           </div>
+//           <div className="col-md-4">
+//             <div className="card text-white bg-success p-3 text-center">
+//               <h6>Total Transactions</h6>
+//               <h4>{expenses.length}</h4>
+//             </div>
+//           </div>
+//         </div>
+
+//         {/*Top 3 Categories and Top 3 Users*/}
+//         <div className="row mt-4">
+
+//           {/*Top 3 Categories Table*/}
+//           <div className="col-md-6">
+//             <div className="card p-4 shadow">
+//               <h5>Top 3 Categories 📊</h5>
+//               {analytics?.topCategories?.length > 0 ? (
+//                 <table className="table-bordered">
+//                   <thead className="table-dark">
+//                     <tr>
+//                       <th>Category</th>
+//                       <th>Total</th>
+//                     </tr>
+//                   </thead>
+//                   <tbody>
+//                     {analytics.topCategories.map((cat, index) => (
+//                       <tr key={index}>
+//                         <td>{cat.category}</td>
+//                         <td>{cat.total} EGP</td>
+//                       </tr>
+//                     ))}
+//                   </tbody>
+//                 </table>
+//               ) : (
+//                 <div className="alert alert-info mt-2">No data yet!</div>
+//               )}
+//             </div>
+//           </div>
+
+//           {/*Table of the top 3 users in spending*/}
+//           <div className="col-md-6">
+//             <div className="card p-4 shadow">
+//               <h5>Top 3 Spending Users 👤</h5>
+//               {analytics?.topUsers?.length > 0 ? (
+//                 <table className="table-bordered">
+//                   <thead className="table-dark">
+//                     <tr>
+//                       <th>User</th>
+//                       <th>Total</th>
+//                     </tr>
+//                   </thead>
+//                   <tbody>
+//                     {analytics.topUsers.map((user, index) => (
+//                       <tr key={index}>
+//                         <td>{user.user}</td>
+//                         <td>{user.total} EGP</td>
+//                       </tr>
+//                     ))}
+//                   </tbody>
+//                 </table>
+//               ) : (
+//                 <div className="alert alert-info mt-2">No data yet!</div>
+//               )}
+//             </div>
+//           </div>
+//         </div>
+
+//         {/*Table of all users*/}
+//         <div className="card p-4 shadow mt-4">
+//           <h5>All Users</h5>
+//           {users.length > 0 ? (
+//             <table className="table-bordered">
+//               <thead className="table-dark">
+//                 <tr>
+//                   <th>#</th>
+//                   <th>Name</th>
+//                   <th>Email</th>
+//                   <th>Role</th>
+//                 </tr>
+//               </thead>
+//               <tbody>
+//                 {users.map((user, index) => (
+//                   <tr key={user._id}>
+//                     <td>{index + 1}</td>
+//                     <td>{user.name}</td>
+//                     <td>{user.email}</td>
+//                     <td>
+//                       {/*Badge color different for admin*/}
+//                       <span className={`badge ${user.role === "admin" ? "bg-danger" : "bg-primary"}`}>
+//                         {user.role}
+//                       </span>
+//                     </td>
+//                   </tr>
+//                 ))}
+//               </tbody>
+//             </table>
+//           ) : (
+//             <div className="alert alert-info">No users yet!</div>
+//           )}
+//         </div>
+
+//         {/*A table of all expenses*/}
+//         <div className="card p-4 shadow mt-4 mb-4">
+//           <h5>All Expenses</h5>
+//           {expenses.length > 0 ? (
+//             <table className="table-bordered">
+//               <thead className="table-dark">
+//                 <tr>
+//                   <th>User</th>
+//                   <th>Title</th>
+//                   <th>Amount</th>
+//                   <th>Category</th>
+//                   <th>Date</th>
+//                 </tr>
+//               </thead>
+//               <tbody>
+//                 {expenses.map((expense) => (
+//                   <tr key={expense._id}>
+//                     <td>{expense.user?.name}</td>
+//                     <td>{expense.title}</td>
+//                     <td>{expense.amount} EGP</td>
+//                     <td>{expense.category?.name}</td>
+//                     <td>{expense.createdAt?.split("T")[0]}</td>
+//                   </tr>
+//                 ))}
+//               </tbody>
+//             </table>
+//           ) : (
+//             <div className="alert alert-info">No expenses yet!</div>
+//           )}
+//         </div>
+
+//       </div>
+//     </div>
+//   );
+// }
+
+// export default Admin;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
@@ -8,6 +269,7 @@ function Admin() {
   const [expenses, setExpenses] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const navigate = useNavigate();
 
@@ -35,11 +297,12 @@ function Admin() {
         API.get("/admin/analytics")
       ]);
 
-      setUsers(usersRes.data.data);
-      setExpenses(expensesRes.data.data);
-      setAnalytics(analyticsRes.data.data);
+      setUsers(usersRes.data.data || []);
+      setExpenses(expensesRes.data.data || []);
+      setAnalytics(analyticsRes.data.data || {});
     } catch (err) {
       console.log("Error:", err);
+      setError(err.response?.data?.message || "Failed to load admin data");
     } finally {
       setLoading(false);
     }
@@ -64,6 +327,8 @@ function Admin() {
       <div className="container mt-4">
         <h4>Admin Panel 👑</h4>
 
+        {error && <div className="alert alert-danger mt-3">{error}</div>}
+
         {/* Analytics Cards */}
         <div className="row mt-4">
           <div className="col-md-4">
@@ -72,12 +337,14 @@ function Admin() {
               <h4>{users.length}</h4>
             </div>
           </div>
+
           <div className="col-md-4">
             <div className="card text-white bg-danger p-3 text-center">
               <h6>Total Expenses</h6>
-              <h4>{analytics?.totalExpenses} EGP</h4>
+              <h4>{analytics?.totalExpenses || 0} EGP</h4>
             </div>
           </div>
+
           <div className="col-md-4">
             <div className="card text-white bg-success p-3 text-center">
               <h6>Total Transactions</h6>
@@ -91,9 +358,8 @@ function Admin() {
           <div className="col-md-6">
             <div className="card p-4 shadow">
               <h5>Top 3 Categories 📊</h5>
-              {analytics?.topCategories?.length === 0 ? (
-                <div className="alert alert-info">No data yet!</div>
-              ) : (
+
+              {analytics?.topCategories?.length > 0 ? (
                 <table className="table table-bordered mt-2">
                   <thead className="table-dark">
                     <tr>
@@ -102,7 +368,7 @@ function Admin() {
                     </tr>
                   </thead>
                   <tbody>
-                    {analytics?.topCategories?.map((cat, index) => (
+                    {analytics.topCategories.map((cat, index) => (
                       <tr key={index}>
                         <td>{cat.category}</td>
                         <td>{cat.total} EGP</td>
@@ -110,6 +376,8 @@ function Admin() {
                     ))}
                   </tbody>
                 </table>
+              ) : (
+                <div className="alert alert-info mt-2">No data yet!</div>
               )}
             </div>
           </div>
@@ -117,9 +385,8 @@ function Admin() {
           <div className="col-md-6">
             <div className="card p-4 shadow">
               <h5>Top 3 Spending Users 👤</h5>
-              {analytics?.topUsers?.length === 0 ? (
-                <div className="alert alert-info">No data yet!</div>
-              ) : (
+
+              {analytics?.topUsers?.length > 0 ? (
                 <table className="table table-bordered mt-2">
                   <thead className="table-dark">
                     <tr>
@@ -128,7 +395,7 @@ function Admin() {
                     </tr>
                   </thead>
                   <tbody>
-                    {analytics?.topUsers?.map((user, index) => (
+                    {analytics.topUsers.map((user, index) => (
                       <tr key={index}>
                         <td>{user.user}</td>
                         <td>{user.total} EGP</td>
@@ -136,6 +403,8 @@ function Admin() {
                     ))}
                   </tbody>
                 </table>
+              ) : (
+                <div className="alert alert-info mt-2">No data yet!</div>
               )}
             </div>
           </div>
@@ -144,9 +413,8 @@ function Admin() {
         {/* All Users */}
         <div className="card p-4 shadow mt-4">
           <h5>All Users</h5>
-          {users.length === 0 ? (
-            <div className="alert alert-info">No users yet!</div>
-          ) : (
+
+          {users.length > 0 ? (
             <table className="table table-bordered mt-2">
               <thead className="table-dark">
                 <tr>
@@ -163,7 +431,11 @@ function Admin() {
                     <td>{user.name}</td>
                     <td>{user.email}</td>
                     <td>
-                      <span className={`badge ${user.role === "admin" ? "bg-danger" : "bg-primary"}`}>
+                      <span
+                        className={`badge ${
+                          user.role === "admin" ? "bg-danger" : "bg-primary"
+                        }`}
+                      >
                         {user.role}
                       </span>
                     </td>
@@ -171,15 +443,16 @@ function Admin() {
                 ))}
               </tbody>
             </table>
+          ) : (
+            <div className="alert alert-info">No users yet!</div>
           )}
         </div>
 
         {/* All Expenses */}
         <div className="card p-4 shadow mt-4 mb-4">
           <h5>All Expenses</h5>
-          {expenses.length === 0 ? (
-            <div className="alert alert-info">No expenses yet!</div>
-          ) : (
+
+          {expenses.length > 0 ? (
             <table className="table table-bordered mt-2">
               <thead className="table-dark">
                 <tr>
@@ -202,9 +475,10 @@ function Admin() {
                 ))}
               </tbody>
             </table>
+          ) : (
+            <div className="alert alert-info">No expenses yet!</div>
           )}
         </div>
-
       </div>
     </div>
   );

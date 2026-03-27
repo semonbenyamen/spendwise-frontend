@@ -27,15 +27,18 @@ function MonthlyReport() {
   const fetchMonthlyReport = async () => {
     try {
       const response = await API.get("/expenses/monthly-report");
-      setMonthlyData(response.data.data);
+      setMonthlyData(response.data.data || []);
     } catch (err) {
       console.log("Error:", err);
+      setMonthlyData([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const maxTotal = Math.max(...monthlyData.map(d => d.total), 1);
+  const maxTotal = monthlyData.length > 0
+    ? Math.max(...monthlyData.map(d => d.total || 0))
+    : 1;
 
   if (loading) {
     return (
@@ -64,22 +67,25 @@ function MonthlyReport() {
           <>
             {/* Cards */}
             <div className="row mt-4">
-              {monthlyData.map((item, index) => (
-                <div className="col-md-3 mb-3" key={index}>
-                  <div className="card p-3 text-center shadow">
-                    <h6>{monthNames[item._id - 1]}</h6>
-                    <h5 className="text-danger">{item.total} EGP</h5>
-                    <div className="progress mt-2" style={{ height: "10px" }}>
-                      <div
-                        className="progress-bar bg-primary"
-                        style={{
-                          width: `${((item.total / maxTotal) * 100).toFixed(0)}%`
-                        }}
-                      />
+              {monthlyData.map((item) => {
+                const monthIndex = (item._id && item._id - 1 >= 0) ? item._id - 1 : 0;
+                return (
+                  <div className="col-md-3 mb-3" key={item._id}>
+                    <div className="card p-3 text-center shadow">
+                      <h6>{monthNames[monthIndex]}</h6>
+                      <h5 className="text-danger">{item.total || 0} EGP</h5>
+                      <div className="progress mt-2" style={{ height: "10px" }}>
+                        <div
+                          className="progress-bar bg-primary"
+                          style={{
+                            width: `${((item.total || 0) / maxTotal * 100).toFixed(0)}%`
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Table */}
@@ -93,12 +99,15 @@ function MonthlyReport() {
                   </tr>
                 </thead>
                 <tbody>
-                  {monthlyData.map((item, index) => (
-                    <tr key={index}>
-                      <td>{monthNames[item._id - 1]}</td>
-                      <td>{item.total} EGP</td>
-                    </tr>
-                  ))}
+                  {monthlyData.map((item) => {
+                    const monthIndex = (item._id && item._id - 1 >= 0) ? item._id - 1 : 0;
+                    return (
+                      <tr key={item._id}>
+                        <td>{monthNames[monthIndex]}</td>
+                        <td>{item.total || 0} EGP</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
