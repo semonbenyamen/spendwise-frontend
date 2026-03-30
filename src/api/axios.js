@@ -1,10 +1,11 @@
 import axios from "axios";
 
 const API = axios.create({
+ // start from here to call bakend API 
   baseURL: "http://localhost:3000/api"
 });
 
-// بنضيف الـ token تلقائي في كل request
+// interceptors : get token from local storage and add it to headers of each request
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {

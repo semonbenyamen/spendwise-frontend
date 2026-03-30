@@ -1,13 +1,17 @@
+// to change between pages without Refresh
 import { useNavigate } from "react-router-dom";
 
 function Navbar() {
   const navigate = useNavigate();
 
   const loggedUser = localStorage.getItem("user");
+  // if find data change it from string to object if not find return null
   const user = loggedUser ? JSON.parse(loggedUser) : null;
 
   const handleLogout = () => {
+  // delete token,user data from local storage  
     localStorage.removeItem("user");
+    localStorage.removeItem("token");
     navigate("/login");
   };
 

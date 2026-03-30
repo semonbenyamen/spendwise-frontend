@@ -23,6 +23,7 @@ function Budget() {
 
   const fetchBudget = async () => {
     try {
+    // get budget status from backend
       const response = await API.get("/budget/status");
       setBudget(response.data);
     } catch (err) {
@@ -34,6 +35,7 @@ function Budget() {
   };
 
   const handleSetBudget = async (e) => {
+  // Stop refresh
     e.preventDefault();
     if (!amount) {
       setError("Please enter an amount");
@@ -133,7 +135,9 @@ function Budget() {
                   type="number"
                   className="form-control"
                   value={amount}
+              // placeholder: Text field when it is empty as a hint to the user
                   placeholder="Enter your monthly budget"
+              // when user types a number, it is saved in the state
                   onChange={(e) => setAmount(e.target.value)}
                 />
               </div>
@@ -143,6 +147,7 @@ function Budget() {
               className="btn btn-primary"
               disabled={loading}
             >
+          // If have loading, the button will stop and display "Saving..."    
               {loading ? "Saving..." : "Set Budget"}
             </button>
           </form>

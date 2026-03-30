@@ -1,3 +1,4 @@
+// get useEffect, this hook executes a specific code when the page loads
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
@@ -13,13 +14,16 @@ function Dashboard() {
 
   const navigate = useNavigate();
 
+// useEffect: works only once when the page loading
   useEffect(() => {
     const loggedUser = localStorage.getItem("user");
     if (!loggedUser) {
       navigate("/login");
       return;
     }
+// change String to Object    
     setUser(JSON.parse(loggedUser));
+// run fetchData to get data
     fetchData();
   }, []);
 
@@ -51,7 +55,8 @@ function Dashboard() {
     }
   };
 
-  // 🧠 helper: get category name from expenses
+  // helper: get category name from expenses
+// take category ID and look for it in expenses
   const getCategoryName = (categoryId) => {
     const found = expenses.find(exp => exp.category?._id === categoryId);
     return found?.category?.name || "Unknown";
@@ -62,6 +67,7 @@ function Dashboard() {
       <div>
         <Navbar />
         <div className="container mt-4 text-center">
+        // spinner-border: creates circle loop/ text-primary: make it blue  
           <div className="spinner-border text-primary" role="status"></div>
         </div>
       </div>
@@ -78,6 +84,7 @@ function Dashboard() {
 
         {/* Alerts */}
         {budget?.alert === "warning" && (
+        // mt-3:yellow background  
           <div className="alert alert-warning mt-3">
             ⚠️ Warning! You have spent 80% of your monthly budget!
           </div>
@@ -90,6 +97,7 @@ function Dashboard() {
 
         {/* Budget Cards */}
         <div className="row mt-4">
+        // 4 cards in a row  
           <div className="col-md-3">
             <div className="card text-white bg-primary p-3 text-center">
               <h6>Monthly Budget</h6>
@@ -152,6 +160,7 @@ function Dashboard() {
 
                       <div className="progress mt-2" style={{ height: "10px" }}>
                         <div
+                      // progress-bar:The colored part inside the strip
                           className="progress-bar bg-primary"
                           style={{ width: `${percent}%` }}
                         />

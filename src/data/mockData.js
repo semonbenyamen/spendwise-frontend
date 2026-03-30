@@ -1,11 +1,13 @@
+// i was use it before Link with backend
 export const mockUser = {
   id: "1",
-  name: "Sara Ahmed",
-  email: "sara@gmail.com",
+  name: "Semon Benyamin",
+  email: "semon@gmail.com",
   password: "123456",
   role: "admin"
 };
 
+// list for new user to find there are no expenses.
 export const mockCategories = [
   { _id: "c1", name: "Food" },
   { _id: "c2", name: "Transport" },
