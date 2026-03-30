@@ -54,15 +54,15 @@ function Login() {
   };
 
   return (
-  // mt: maegin top  
-    <div className="container mt-5">
+   
+    <div className="container  mt-5">
       <div className="row justify-content-center">
-  // column takes 5 out of 12 parts of the display on medium-sized screens
+  {/* column takes 5 out of 12 parts of the display on medium-sized screens */}
         <div className="col-md-5">
           <div className="card p-4 shadow">
             <h2 className="text-center mb-4">SpendWise 💰</h2>
             <h5 className="text-center mb-4">Login</h5>
-  // &&:If first condition true , show the second part
+  {/* &&:If first condition true , show the second part */}
             {error && <div className="alert alert-danger">{error}</div>}
 
             <form onSubmit={handleLogin}>
@@ -93,7 +93,7 @@ function Login() {
                 className="btn btn-primary w-100"
                 disabled={loading}
               >
-            // If there loading, button will disabled to stop user from press it again
+             {/* If there loading, button will disabled to stop user from press it again */}
                 {loading ? "Loading..." : "Login"}
               </button>
             </form>
@@ -101,7 +101,7 @@ function Login() {
             <p className="text-center mt-3">
               Don't have an account?{" "}
               <span
-            // make mouse as it a link.  
+            //  make mouse as it a link.  
                 style={{ cursor: "pointer", color: "blue" }}
                 onClick={() => navigate("/register")}
               >

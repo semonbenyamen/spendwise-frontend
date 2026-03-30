@@ -128,7 +128,7 @@ function Expenses() {
   return (
     <div>
       <Navbar />
-      <div className="container mt-4">
+      <div className="container text-center mt-4">
         <h4>Expenses 💸</h4>
 
         {alertMessage && (

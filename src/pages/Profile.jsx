@@ -117,7 +117,7 @@ function Profile() {
   return (
     <div>
       <Navbar />
-      <div className="container mt-4">
+      <div className="container text-center mt-4">
         <h4>Profile 👤</h4>
 
         <div className="row justify-content-center mt-4">

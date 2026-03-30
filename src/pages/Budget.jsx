@@ -64,7 +64,7 @@ function Budget() {
   return (
     <div>
       <Navbar />
-      <div className="container mt-4">
+      <div className="container text-center mt-4">
         <h4>Budget 🎯</h4>
 
         {/* Budget Status Cards */}
@@ -147,7 +147,7 @@ function Budget() {
               className="btn btn-primary"
               disabled={loading}
             >
-          // If have loading, the button will stop and display "Saving..."    
+          {/* If have loading, the button will stop and display "Saving..." */}
               {loading ? "Saving..." : "Set Budget"}
             </button>
           </form>

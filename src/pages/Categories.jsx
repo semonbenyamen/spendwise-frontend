@@ -90,7 +90,7 @@ function Categories() {
   return (
     <div>
       <Navbar />
-      <div className="container mt-4">
+      <div className="container text-center mt-4">
         <h4>Categories 📂</h4>
 
         <div className="card p-4 shadow mb-4">

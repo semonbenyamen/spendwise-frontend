@@ -77,7 +77,7 @@ function Dashboard() {
   return (
     <div>
       <Navbar />
-      <div className="container mt-4">
+      <div className="container text-center mt-4">
         <h4>Welcome, {user?.name} 👋</h4>
 
         {error && <div className="alert alert-danger mt-3">{error}</div>}
@@ -97,7 +97,7 @@ function Dashboard() {
 
         {/* Budget Cards */}
         <div className="row mt-4">
-        // 4 cards in a row  
+        {/* 4 cards in a row */}
           <div className="col-md-3">
             <div className="card text-white bg-primary p-3 text-center">
               <h6>Monthly Budget</h6>

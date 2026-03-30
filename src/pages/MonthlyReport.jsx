@@ -56,7 +56,7 @@ function MonthlyReport() {
   return (
     <div>
       <Navbar />
-      <div className="container mt-4">
+      <div className="container text-center mt-4">
         <h4>Monthly Report 📅</h4>
 
         {monthlyData.length === 0 ? (
