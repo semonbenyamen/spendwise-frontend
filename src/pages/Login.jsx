@@ -1,39 +1,30 @@
-// to save data in component,and whene data changes,the page updates automatically
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-// get axios to call backend API
 import API from "../api/axios";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-// It saves page is loading or not,false:meaning it's not loading
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
-  // stop page from the default refresh when the form is submitted  
+  const handleLogin = async (e) => { 
     e.preventDefault();
-  // change loading to true,to make button say "Loading"  
+ 
     setLoading(true);
-  // deletes any old errors before sending  
     setError("");
 
-    try {
-  // sends request to backend on endpoint and with it email and password,wait for response    
+    try { 
       const response = await API.post("/auth/login", { email, password });
 
-      // get token from res and save it in localstorage to use with req
       const token = response.data.token;
       localStorage.setItem("token", token);
 
-      // get data of user from profile
       const profileResponse = await API.get("/auth/profile");
       const userData = profileResponse.data;
-
-    // change object to string,localStorage only stores strings  
+ 
       localStorage.setItem("user", JSON.stringify({
         id: userData._id,
         name: userData.name,
@@ -47,7 +38,6 @@ function Login() {
         setError(err.response?.data?.msg ||
         err.response?.data?.message ||
         err.response?.data?.errors?.[0]?.msg || "Something went wrong");
-  // Finally:always executed whatever request succeeds or fails, return loading to false
     } finally {
       setLoading(false);
     }
@@ -55,8 +45,8 @@ function Login() {
 
   return (
    
-    <div className="container  mt-5">
-      <div className="row justify-content-center">
+     <div className="container  mt-5">
+      <div className="row justify-content-center"> 
   {/* column takes 5 out of 12 parts of the display on medium-sized screens */}
         <div className="col-md-5">
           <div className="card p-4 shadow">

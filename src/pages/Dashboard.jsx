@@ -14,22 +14,22 @@ function Dashboard() {
 
   const navigate = useNavigate();
 
-// useEffect: works only once when the page loading
+// when loading
   useEffect(() => {
     const loggedUser = localStorage.getItem("user");
     if (!loggedUser) {
       navigate("/login");
       return;
     }
-// change String to Object    
+
     setUser(JSON.parse(loggedUser));
-// run fetchData to get data
+//to get data
     fetchData();
   }, []);
 
   const fetchData = async () => {
     try {
-      // Budget
+
       try {
         const budgetResponse = await API.get("/budget/status");
         setBudget(budgetResponse.data);
@@ -55,8 +55,7 @@ function Dashboard() {
     }
   };
 
-  // helper: get category name from expenses
-// take category ID and look for it in expenses
+  
   const getCategoryName = (categoryId) => {
     const found = expenses.find(exp => exp.category?._id === categoryId);
     return found?.category?.name || "Unknown";

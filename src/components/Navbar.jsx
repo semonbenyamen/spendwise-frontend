@@ -60,7 +60,7 @@ function Navbar() {
           </button>
         )}
 
-        {/* Profile Button مع الصورة */}
+        {/* Profile Button */}
         <div
           onClick={() => navigate("/profile")}
           style={{ cursor: "pointer" }}
